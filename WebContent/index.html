@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>邮件群发系统</title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css"/>
+    <script type="text/javascript" src="./js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="./js/ajaxfileupload.js"></script>
+    <script type="text/javascript">
+        function submit() {
+            var userMail = $('#userMail').val();
+            if (!checkEmail(userMail)) {
+                return false;
+            }
+            var userPassword = $('#userPassword').val();
+            var mailSentDate = Date.parse($('#mailSentDate').val());
+            var mailSubject = encodeURI($('#mailSubject').val());
+            var mailContent = encodeURI($('#mailContent').val());
+            var contactList = getContactList();
+            if (contactList === null) {
+                alert("请至少输入一个收件人！");
+                return false;
+            }
+            contactList = encodeURI(encodeURI(contactList));
+
+            var attachmentCount = getAttachmentCount();
+            var attachmentIdArray = [];
+            for (var i = 0; i < attachmentCount; ++i) {
+                attachmentIdArray[i] = 'attachment' + i;
+            }
+
+            $.ajaxFileUpload({
+                url: '/MassMailing/MassMailing',
+                secureuri: false,
+                fileElementId: attachmentIdArray,
+                data: {
+                    userMail: userMail,
+                    userPassword: userPassword,
+                    mailSentDate: mailSentDate,
+                    mailSubject: mailSubject,
+                    mailContent: mailContent,
+                    contactList: contactList
+                },
+                success: function (data, status) {
+                    alert(status);
+                    for (var i = 0; i < attachmentCount; ++i) {
+                        var attNode = $('#attachment' + i);
+                        attNode.removeAttr('id');
+                        attNode.removeAttr('name');
+                    }
+                },
+                error: function (data, status, e) {
+                    alert("status:" + status + e);
+                }
+            });
+            return false;
+        }
+
+        function importCSV() {
+            if ($('#csvFile').val() === "") {
+                alert('请先选择要导入的CSV文件！');
+                return false;
+            }
+            $.ajaxFileUpload({
+                type: 'POST',
+                url: '/MassMailing/ParseCsv',
+                secureuri: false,
+                fileElementId: 'csvFile',
+                success: function (data, status) {
+                    console.log(status);
+                    $(data).find("contact-item").each(function (i) {
+                        var name = $(this).attr("name");
+                        var email = $(this).attr("email");
+                        addContact(name, email);
+                    })
+                },
+                error: function (data, status, e) {
+                    alert("status:" + status + e);
+                }
+            });
+            return false;
+        }
+
+        function addContact(name, email) {
+            var conNode = document.getElementById('contact');
+            conNode.insertAdjacentHTML(
+                    "beforeend",
+                    "<div class=\"contact-item\">"
+                    + "<input type=\"text\" placeholder=\"name\" value=\"" + name +
+                    "\"/> <input type=\"email\" placeholder=\"email\" value=\"" + email +
+                    "\"/> <input type=\"button\" value=\"删除\" onclick=\"delContact(this)\"/></div>");
+        }
+
+        function delContact(contact) {
+            $(contact).parent().remove();
+        }
+
+        function getContactList() {
+            var contactList = '<?xml version=\"1.0\" encoding=\"UTF-8\"?><contact>';
+            var contactCount = 0;
+            $('#contact').children('.contact-item').each(
+                    function (i, v) {
+                        var itemNode = v;
+                        var name = $(itemNode).children(':text').val();
+                        var email = $(itemNode).children('[type=email]').val();
+                        if (email != "") {
+                            contactCount++;
+                            contactList += '<contact-item name=\"' + encodeURI(name)
+                                    + '\" email=\"' + encodeURI(email) + '\"/>';
+                        }
+                    });
+            if (contactCount === 0) {
+                return null;
+            }
+            contactList += "</contact>";
+            return contactList;
+        }
+
+        function addAttachment() {
+            var attNode = document.getElementById('attachment');
+            attNode.insertAdjacentHTML(
+                    "beforeend",
+                    "<tr><td><label for=\"attachment\" class=\"item-label\">附件: </label> "
+                    + "<input type=\"file\" class=\"attachment-item\"/></td>"
+                    + "<td><input type=\"button\" value=\"删除\" onclick=\"delAttachment(this)\"/></td></tr>");
+        }
+        function delAttachment(attachment) {
+            $(attachment).parent().parent().remove();
+        }
+
+        function getAttachmentCount() {
+            var attachmentCount = 0;
+            $('#attachment').children().each(function (i, v) {
+                var itemNode = $(v).children().children('.attachment-item');
+                if (itemNode.val() != '') {
+                    itemNode.attr('id', 'attachment' + attachmentCount);
+                    itemNode.attr('name', 'attachment' + attachmentCount);
+                    attachmentCount++;
+                }
+            });
+            return attachmentCount;
+        }
+
+        function checkEmail(email) {
+            var re = /\w[.\w]*\w@\w[\.\w]*\.[\w]+/;
+            if (!email.match(re)) {
+                alert("不合法的发件人帐户！");
+                return false;
+            } else if (!isEmailSupported(email)) {
+                alert("不支持的邮箱类型！");
+                return false;
+            }
+            return true;
+        }
+
+        function isEmailSupported(email) {
+            var domainName = getEmailDomainName(email.toLowerCase());
+            var supported = ['qq.com', 'gmail.com', '163.com', 'sina.cn', 'sina.com'];
+            return supported.includes(domainName);
+
+        }
+
+        function getEmailDomainName(email) {
+            return email.substr(email.indexOf('@') + 1);
+        }
+    </script>
+</head>
+<body>
+<div class="main">
+    <div class="content">
+        <input type="button" value="开始群发" class="submit-btn" onclick="submit()"/>
+        <div class="panel">
+            发件人信息：
+            <div>
+                <label for="userMail" class="item-label">帐户：</label><input
+                    type="email" id="userMail" placeholder="发件人邮箱"
+                    value=""/><br>
+                <label for="userPassword"
+                       class="item-label">密码：</label><input type="password"
+                                                            id="userPassword"
+                                                            placeholder="发件人密码"
+                                                            value=""/>
+            </div>
+        </div>
+        <div class="panel">
+            收件人列表： <input type="button" value="添加收件人"
+                          onclick="addContact('', '')"/> <input type="file" id="csvFile"
+                                                                name="csvFile"/> <input type="button" value="导入收件人列表"
+                                                                                        onclick="importCSV()"/>
+
+            <div id="contact">
+                <div class="contact-item">
+                    <input type="text" placeholder="name" value=""/> <input
+                        type="email" placeholder="email" value=""/> <input
+                        type="button" value="删除" onclick="delContact(this)"/>
+                </div>
+            </div>
+        </div>
+        <div class="panel">
+            附件列表：<input type="button" value="添加附件" onclick="addAttachment()"/>
+            <table>
+                <tbody id="attachment">
+                <tr>
+                    <td><label for="attachment" class="item-label">附件: </label>
+                        <input type="file" class="attachment-item"/></td>
+                    <td><input type="button" value="删除"
+                               onclick="delAttachment(this)"/></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="panel">
+            邮件内容：<br> <label for="mailSentDate" class="item-label">发送时间：</label><input
+                type="datetime-local" id="mailSentDate"/><br> <label
+                for="mailSubject" class="item-label">主题：</label> <input type="text"
+                                                                        id="mailSubject" placeholder="subject"
+                                                                        value="你好！\{name}"/><br>
+            <label for="mailContent" class="item-label">正文：</label><br>
+            <textarea id="mailContent">你好！\{name}，你的邮箱是\{email}</textarea>
+        </div>
+    </div>
+</div>
+</body>
+</html>

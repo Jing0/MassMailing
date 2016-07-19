@@ -1,0 +1,62 @@
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    color: #0F88EB;
+    font-size: 18px;
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    line-height: 30px;
+}
+
+.main {
+    padding-top: 30px;
+    height: 100%;
+}
+
+.content {
+    margin: auto;
+    min-height: 590px;
+    vertical-align: middle;
+    text-align: left;
+    width: 580px;
+}
+
+.panel {
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+input[type="button"] {
+    background: #0F88EB none repeat scroll 0 0;
+    border: 0 none;
+    border-radius: 3px;
+    color: #FFF;
+}
+
+input[type="button"]:hover {
+    background: transparent linear-gradient(to bottom, #80C3F7, #6BBAF8) repeat scroll 0 0;
+}
+
+.submit-btn {
+    font-size: 16px;
+    line-height: 22px;
+    width: 80px;
+    height: 30px;
+}
+
+#mailSubject {
+    width: 210px;
+}
+
+#mailContent {
+    width: 420px;
+    height: 300px;
+}
+
+.item-label {
+    font-size: 14px;
+    color: #919191;
+}
